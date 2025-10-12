@@ -1,0 +1,379 @@
+.note-session {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f7fa;
+}
+
+.session-header {
+  background: white;
+  padding: 20px 40px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-header h2 {
+  color: var(--primary-color);
+  font-size: 20px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-calibrate {
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.btn-calibrate:hover {
+  background-color: #059669;
+}
+
+.btn-undo {
+  padding: 8px 16px;
+  background-color: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-undo:hover {
+  background-color: #d97706;
+}
+
+.btn-clear {
+  padding: 8px 16px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-clear:hover {
+  background-color: #dc2626;
+}
+
+.btn-rotate {
+  padding: 8px 16px;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-rotate:hover {
+  background-color: #4f46e5;
+}
+
+.btn-toggle-panel {
+  padding: 8px 16px;
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-toggle-panel:hover {
+  opacity: 0.9;
+}
+
+.session-content {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  min-height: 0;
+}
+
+.drawing-tools {
+  display: flex;
+  gap: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tool-group input[type="range"] {
+  width: 100px;
+}
+
+.tool-group input[type="color"] {
+  width: 50px;
+  height: 35px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tool-group button {
+  padding: 8px 16px;
+  background-color: #e5e7eb;
+  color: var(--text-primary);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.tool-group button:hover {
+  background-color: #d1d5db;
+}
+
+.tool-group button.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+}
+
+.canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-container {
+  background: white;
+  position: relative;
+}
+
+.canvas-container > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure tldraw editor fills the container */
+.tl-container {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+}
+
+/* Critical: Ensure pointer events are handled precisely */
+.canvas-container,
+.canvas-container *,
+.tl-container,
+.tl-canvas {
+  /* Disable any transforms that might offset pointer position */
+  transform: none !important;
+  transform-origin: 0 0 !important;
+  /* Ensure 1:1 pixel mapping */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Ensure the canvas wrapper doesn't interfere with pointer events */
+.canvas-wrapper {
+  /* This is the only element that should have transform (for rotation) */
+  pointer-events: all;
+}
+
+/* Make sure pen/touch input is captured correctly */
+.tl-canvas {
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Precise cursor for drawing */
+.tl-canvas:active {
+  cursor: crosshair !important;
+}
+
+.side-panel {
+  width: 350px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-section {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.panel-section:last-child {
+  border-bottom: none;
+}
+
+.panel-section h3 {
+  color: var(--text-primary);
+  font-size: 16px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.patient-summary p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.patient-summary strong {
+  color: var(--text-primary);
+  margin-right: 4px;
+}
+
+.medical-history-box {
+  background-color: var(--bg-light);
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.medical-history-box p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.extracted-text,
+.extracted-data {
+  margin-top: 12px;
+}
+
+.extracted-text h4,
+.extracted-data h4 {
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.extracted-text textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.extracted-data .data-section {
+  margin-bottom: 12px;
+}
+
+.extracted-data .data-section strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.extracted-data ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.extracted-data li {
+  background-color: var(--bg-light);
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.panel-actions button {
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .side-panel {
+    width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .session-content {
+    flex-direction: column;
+  }
+
+  .side-panel {
+    width: 100%;
+    height: 300px;
+  }
+
+  .canvas-container {
+    width: 100% !important;
+    height: auto !important;
+  }
+}
