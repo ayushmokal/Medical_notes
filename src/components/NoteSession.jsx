@@ -353,39 +353,52 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
             </div>
 
             <div className="panel-section">
-              <h3>🤖 AI Medical Data Extraction</h3>
+              <h3>📝 Raw Notes</h3>
               <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '10px' }}>
-                Powered by Gemini 2.0 Flash - 94% accuracy
+                Type or dictate notes here. Use AI extraction to structure data automatically.
               </p>
-              <button 
-                onClick={handleExtractText} 
-                disabled={isExtracting}
-                className="btn-secondary btn-block"
-                style={{ 
-                  background: isExtracting ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  fontWeight: '600'
-                }}
-              >
-                {isExtracting ? '🔄 Analyzing with Gemini AI...' : '✨ Extract Medical Data (Gemini AI)'}
-              </button>
-              
-              {extractedText && (
-                <div className="extracted-text">
-                  <h4>Raw Text:</h4>
-                  <textarea 
-                    value={extractedText} 
-                    onChange={(e) => setExtractedText(e.target.value)}
-                    rows="6"
-                  />
-                </div>
-              )}
+              <div className="extracted-text">
+                <textarea 
+                  value={extractedText} 
+                  onChange={(e) => setExtractedText(e.target.value)}
+                  rows="8"
+                  placeholder="Type your medical notes here...&#10;&#10;Or use the canvas above to write and extract with AI.&#10;&#10;Example:&#10;C/C: Fever, Cough&#10;BP: 120/80  HR: 72  T: 99F&#10;Dx: URTI&#10;Rx: Amoxicillin 500mg TID x7d"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
 
-              {extractedData && extractedData.vitals && (
-                <div className="extracted-data">
-                  <h4>Extracted Medical Data:</h4>
+              <div style={{ marginTop: '15px' }}>
+                <h4 style={{ marginBottom: '10px', fontSize: '14px' }}>🤖 AI Medical Data Extraction</h4>
+                <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>
+                  Powered by Gemini 2.0 Flash - 94% accuracy
+                </p>
+                <button 
+                  onClick={handleExtractText} 
+                  disabled={isExtracting}
+                  className="btn-secondary btn-block"
+                  style={{ 
+                    background: isExtracting ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    fontWeight: '600'
+                  }}
+                >
+                  {isExtracting ? '🔄 Analyzing with Gemini AI...' : '✨ Extract from Canvas with AI'}
+                </button>
+              </div>
+
+              {extractedData && (
+                <div className="extracted-data" style={{ marginTop: '15px' }}>
+                  <h4>📊 Extracted Medical Data:</h4>
                   
-                  {Object.keys(extractedData.vitals).length > 0 && (
+                  {extractedData.vitals && Object.keys(extractedData.vitals).length > 0 && (
                     <div className="data-section">
                       <strong>Vitals:</strong>
                       <ul>
