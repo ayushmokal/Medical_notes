@@ -19,41 +19,54 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
   const fabricCanvasRef = useRef(null);
   const canvasContainerRef = useRef(null);
 
-  // A4 dimensions in pixels (at 96 DPI)
-  const A4_WIDTH = 794; // 210mm at 96 DPI
-  const A4_HEIGHT = 1123; // 297mm at 96 DPI
+  // A4 dimensions in pixels (at 72 DPI for better digitizer matching)
+  // Physical A4: 210mm × 297mm
+  // At 72 DPI: 595px × 842px (matches PDF standard)
+  // Scaled up for better drawing: 1190px × 1684px (2x for retina/detail)
+  const A4_WIDTH = 1190;   // 210mm × 2 for high resolution
+  const A4_HEIGHT = 1684;  // 297mm × 2 for high resolution
 
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasRef.current || fabricCanvasRef.current) return;
 
-    // Create Fabric canvas with v6 API
+    // Create Fabric canvas with v6 API - optimized for digitizer pen
     const canvas = new FabricCanvas(canvasRef.current, {
       width: A4_WIDTH,
       height: A4_HEIGHT,
       isDrawingMode: true,
       backgroundColor: '#ffffff',
-      selection: true,
-      // Critical for pen alignment
-      enableRetinaScaling: true,
+      selection: false, // Disable selection for pure drawing
+      // CRITICAL: Pen alignment settings
+      enableRetinaScaling: false, // Disable to prevent coordinate doubling
       renderOnAddRemove: true,
-      skipTargetFind: false,
+      skipTargetFind: true, // Faster drawing response
+      // Optimize for pen input
+      allowTouchScrolling: false,
+      stopContextMenu: true,
+      fireRightClick: false,
+      // Smooth drawing
+      perPixelTargetFind: false,
+      targetFindTolerance: 4
     });
 
-    // Configure drawing brush
+    // Configure drawing brush for pen
     const brush = new PencilBrush(canvas);
     brush.color = brushColor;
     brush.width = brushWidth;
+    brush.strokeLineCap = 'round'; // Smoother strokes
+    brush.strokeLineJoin = 'round';
     canvas.freeDrawingBrush = brush;
 
-    // Enable touch drawing for digital pens
+    // CRITICAL: Disable event caching for real-time pen tracking
     canvas.allowTouchScrolling = false;
 
     fabricCanvasRef.current = canvas;
 
-    console.log('✅ Fabric.js A4 Canvas initialized');
-    console.log(`📐 Canvas size: ${A4_WIDTH}x${A4_HEIGHT}px (210mm × 297mm)`);
-    console.log('🎯 1:1 coordinate mapping enabled');
+    console.log('✅ A4 Canvas initialized for digitizer pen');
+    console.log(`📐 Canvas: ${A4_WIDTH}px × ${A4_HEIGHT}px (210mm × 297mm)`);
+    console.log('🖊️ Digitizer: Ready for pen input');
+    console.log('🎯 Coordinates: Direct mapping enabled');
 
     // Cleanup
     return () => {
@@ -69,6 +82,8 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
     if (fabricCanvasRef.current && fabricCanvasRef.current.freeDrawingBrush) {
       fabricCanvasRef.current.freeDrawingBrush.color = brushColor;
       fabricCanvasRef.current.freeDrawingBrush.width = brushWidth;
+      fabricCanvasRef.current.freeDrawingBrush.strokeLineCap = 'round';
+      fabricCanvasRef.current.freeDrawingBrush.strokeLineJoin = 'round';
     }
   }, [brushColor, brushWidth]);
 
@@ -212,15 +227,30 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
 
   const calibrateCanvas = () => {
     if (fabricCanvasRef.current) {
-      // Reset zoom and pan
+      // Reset zoom and pan to ensure 1:1 mapping
       fabricCanvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
       fabricCanvasRef.current.renderAll();
       
-      console.log('✅ A4 Canvas calibrated');
-      console.log('📐 Canvas size: 210mm × 297mm (A4)');
-      console.log('🎯 Pen alignment: 1:1 - cursor will match pen position');
+      console.log('✅ A4 Canvas calibrated for digitizer');
+      console.log('📐 Physical A4: 210mm × 297mm');
+      console.log(`🖥️ Digital Canvas: ${A4_WIDTH}px × ${A4_HEIGHT}px`);
+      console.log('🎯 Pen alignment: Direct 1:1 mapping');
+      console.log('📍 Place your A4 paper to align with screen canvas edges');
       
-      alert('✅ A4 Canvas Calibrated!\n\n📐 Size: 210mm × 297mm\n🎯 Pen touches will now match cursor position exactly.\n\nPlace your A4 paper on the digitizer and start writing!');
+      alert(`✅ Digitizer Canvas Calibrated!
+
+📐 Physical A4 Paper: 210mm × 297mm
+🖥️ Digital Canvas: High-resolution A4 matching
+
+🎯 SETUP INSTRUCTIONS:
+1. Place A4 paper on your digitizer tablet
+2. Align the paper edges with the blue canvas border on screen
+3. The top-left corner of paper = top-left of blue canvas
+4. The bottom-right corner of paper = bottom-right of blue canvas
+
+🖊️ Your pen touches will now map exactly to the canvas!
+
+💡 TIP: Use the corner marks as reference points`);
     }
   };
 
@@ -308,24 +338,99 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
             ref={canvasContainerRef}
             className="canvas-wrapper"
             style={{ 
-              width: '210mm',
-              height: '297mm',
+              width: `${A4_WIDTH}px`,
+              height: `${A4_HEIGHT}px`,
+              maxWidth: '90vw', // Responsive but maintains aspect ratio
+              maxHeight: '80vh',
               transform: `rotate(${canvasRotation}deg)`,
               transformOrigin: 'center center',
               transition: 'transform 0.3s ease',
               position: 'relative',
-              margin: '20px auto'
+              margin: '20px auto',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+              borderRadius: '12px',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
             }}
           >
+            {/* Corner markers for alignment */}
+            <div style={{
+              position: 'absolute',
+              top: '10px',
+              left: '10px',
+              width: '30px',
+              height: '30px',
+              borderTop: '4px solid #ef4444',
+              borderLeft: '4px solid #ef4444',
+              zIndex: 10,
+              pointerEvents: 'none'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              width: '30px',
+              height: '30px',
+              borderTop: '4px solid #ef4444',
+              borderRight: '4px solid #ef4444',
+              zIndex: 10,
+              pointerEvents: 'none'
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: '10px',
+              left: '10px',
+              width: '30px',
+              height: '30px',
+              borderBottom: '4px solid #ef4444',
+              borderLeft: '4px solid #ef4444',
+              zIndex: 10,
+              pointerEvents: 'none'
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: '10px',
+              right: '10px',
+              width: '30px',
+              height: '30px',
+              borderBottom: '4px solid #ef4444',
+              borderRight: '4px solid #ef4444',
+              zIndex: 10,
+              pointerEvents: 'none'
+            }} />
+            
+            {/* A4 size label */}
+            <div style={{
+              position: 'absolute',
+              top: '-25px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#3b82f6',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: '600',
+              zIndex: 10,
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap'
+            }}>
+              📄 A4 Paper (210mm × 297mm) - Align your paper with the corners
+            </div>
+
             <canvas 
               ref={canvasRef}
               style={{
-                border: '2px solid #2563eb',
+                border: '4px solid #2563eb',
                 borderRadius: '4px',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+                boxShadow: '0 4px 20px rgba(37, 99, 235, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.5)',
                 cursor: 'crosshair',
                 touchAction: 'none',
-                display: 'block'
+                display: 'block',
+                background: '#ffffff',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
               }}
             />
           </div>

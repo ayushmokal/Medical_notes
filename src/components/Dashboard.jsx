@@ -368,7 +368,10 @@ const Dashboard = () => {
                   <p className="no-sessions">No sessions match your search. Try different keywords.</p>
                 ) : (
                   <div className="sessions-list">
-                    {filteredNotes.map((note) => {
+                    {filteredNotes.map((note, index) => {
+                      // Calculate session number (newest first, so reverse index)
+                      const sessionNumber = filteredNotes.length - index;
+                      
                       // Generate smart session name
                       const sessionDate = note.createdAt 
                         ? new Date(note.createdAt.seconds * 1000)
@@ -417,7 +420,8 @@ const Dashboard = () => {
                               </span>
                               <div className="session-title-content">
                                 <h4>
-                                  {sessionTitle || `Session #${note.id.slice(0, 8)}`}
+                                  <span className="session-number">Session {sessionNumber}</span>
+                                  {sessionTitle && <span className="session-subtitle"> - {sessionTitle}</span>}
                                 </h4>
                                 <span className="session-date">{dateStr}</span>
                               </div>
@@ -428,7 +432,7 @@ const Dashboard = () => {
                                 className="btn-icon"
                                 title="Download as PDF"
                               >
-                                �
+                                📥
                               </button>
                             </div>
                           </div>

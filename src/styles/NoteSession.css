@@ -115,10 +115,10 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   overflow: auto;
-  background: #f8f9fa;
+  background: #1e293b;
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-md);
@@ -135,6 +135,8 @@
   margin-bottom: 20px;
   flex-wrap: wrap;
   align-items: center;
+  width: 100%;
+  max-width: 1200px;
 }
 
 .tool-group {
@@ -186,9 +188,33 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  /* CRITICAL: No transforms that affect child positioning */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Ensure canvas has perfect 1:1 pixel mapping */
+.canvas-wrapper canvas {
+  /* CRITICAL: Prevent any scaling or transforms */
+  transform: none !important;
+  image-rendering: auto;
+  /* Ensure sharp rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Perfect pointer event handling for digitizer pen */
+  pointer-events: auto !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  /* Prevent context menu on right-click/long-press */
+  -webkit-context-menu: none !important;
+}
+
+/* Optimize for pen input - prevent any lag */
+.canvas-wrapper canvas:active {
+  cursor: crosshair !important;
 }
 
 .canvas-container {
@@ -196,50 +222,7 @@
   position: relative;
 }
 
-.canvas-container > div {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Ensure tldraw editor fills the container */
-.tl-container {
-  width: 100% !important;
-  height: 100% !important;
-  position: relative !important;
-}
-
-/* Critical: Ensure pointer events are handled precisely */
-.canvas-container,
-.canvas-container *,
-.tl-container,
-.tl-canvas {
-  /* Disable any transforms that might offset pointer position */
-  transform: none !important;
-  transform-origin: 0 0 !important;
-  /* Ensure 1:1 pixel mapping */
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-
-/* Ensure the canvas wrapper doesn't interfere with pointer events */
-.canvas-wrapper {
-  /* This is the only element that should have transform (for rotation) */
-  pointer-events: all;
-}
-
-/* Make sure pen/touch input is captured correctly */
-.tl-canvas {
-  touch-action: none !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -webkit-touch-callout: none !important;
-}
-
-/* Precise cursor for drawing */
-.tl-canvas:active {
-  cursor: crosshair !important;
-}
+/* Remove old styles that interfere with pen input */
 
 .side-panel {
   width: 350px;
