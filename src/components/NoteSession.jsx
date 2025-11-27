@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Canvas as FabricCanvas, PencilBrush } from 'fabric';
 import { notesService } from '../services/notesService';
 import geminiOcrService from '../services/geminiOcrService';
@@ -17,57 +17,84 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
   
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
+  const baseGetPointerRef = useRef(null);
   const canvasContainerRef = useRef(null);
 
-  // A4 dimensions in pixels (at 72 DPI for better digitizer matching)
-  // Physical A4: 210mm × 297mm
-  // At 72 DPI: 595px × 842px (matches PDF standard)
-  // Scaled up for better drawing: 1190px × 1684px (2x for retina/detail)
-  const A4_WIDTH = 1190;   // 210mm × 2 for high resolution
-  const A4_HEIGHT = 1684;  // 297mm × 2 for high resolution
+  // PORTRAIT MODE: 8 inches × 11 inches (Letter size in portrait)
+  // At 192 DPI for high resolution: 8in = 1536px, 11in = 2112px
+  const CANVAS_DPI = 192;
+  const CANVAS_WIDTH = 8 * CANVAS_DPI;  // 1536px
+  const CANVAS_HEIGHT = 11 * CANVAS_DPI; // 2112px
 
   // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasRef.current || fabricCanvasRef.current) return;
 
-    // Create Fabric canvas with v6 API - optimized for digitizer pen
+    console.log('🎨 Initializing Fabric canvas...');
+
+    // Create Fabric canvas with v6 API - PORTRAIT MODE optimized for digitizer pen
     const canvas = new FabricCanvas(canvasRef.current, {
-      width: A4_WIDTH,
-      height: A4_HEIGHT,
-      isDrawingMode: true,
+      width: CANVAS_WIDTH,
+      height: CANVAS_HEIGHT,
       backgroundColor: '#ffffff',
-      selection: false, // Disable selection for pure drawing
-      // CRITICAL: Pen alignment settings
+      selection: false, // Disable selection for pure drawing (pen mode)
+      // CRITICAL: Pen alignment settings for digitizer in portrait mode
       enableRetinaScaling: false, // Disable to prevent coordinate doubling
       renderOnAddRemove: true,
-      skipTargetFind: true, // Faster drawing response
-      // Optimize for pen input
+      skipTargetFind: false, // Changed to false - need to find drawn objects
+      // Optimize for digitizer pen input (NOT mouse mode)
       allowTouchScrolling: false,
       stopContextMenu: true,
       fireRightClick: false,
-      // Smooth drawing
-      perPixelTargetFind: false,
-      targetFindTolerance: 4
+      perPixelTargetFind: true,
+      targetFindTolerance: 4,
+      // CRITICAL: Force Fabric to use the exact canvas element we provide
+      enablePointerEvents: true
     });
 
-    // Configure drawing brush for pen
+    // CRITICAL: Set isDrawingMode AFTER canvas creation (not in constructor)
+    canvas.isDrawingMode = true;
+
+    // CRITICAL: Ensure canvas element is properly set up
+    const canvasEl = canvas.getElement();
+    canvasEl.style.width = CANVAS_WIDTH + 'px';
+    canvasEl.style.height = CANVAS_HEIGHT + 'px';
+
+    // Configure drawing brush for digitizer pen (socket/pen mode)
     const brush = new PencilBrush(canvas);
     brush.color = brushColor;
     brush.width = brushWidth;
-    brush.strokeLineCap = 'round'; // Smoother strokes
-    brush.strokeLineJoin = 'round';
+    brush.strokeLineCap = 'round'; // Smooth pen strokes
+    brush.strokeLineJoin = 'round'; // Smooth corners
     canvas.freeDrawingBrush = brush;
-
-    // CRITICAL: Disable event caching for real-time pen tracking
-    canvas.allowTouchScrolling = false;
 
     fabricCanvasRef.current = canvas;
 
-    console.log('✅ A4 Canvas initialized for digitizer pen');
-    console.log(`📐 Canvas: ${A4_WIDTH}px × ${A4_HEIGHT}px (210mm × 297mm)`);
-    console.log('🖊️ Digitizer: Ready for pen input');
-    console.log('🎯 Coordinates: Direct mapping enabled');
+    console.log('✅ Canvas initialized successfully');
+    console.log(`📐 Canvas: ${CANVAS_WIDTH}px × ${CANVAS_HEIGHT}px (8in × 11in PORTRAIT)`);
+    console.log('🖊️ Drawing mode enabled');
+    console.log('🎨 Brush configured:', { color: brushColor, width: brushWidth });
 
+    // Add event listener to debug drawing
+    canvas.on('path:created', (e) => {
+      console.log('✅ Path created, rendering all');
+      canvas.requestRenderAll();
+    });
+
+    // CRITICAL: Force initial render to establish canvas context
+    canvas.renderAll();
+    
+    // Additional check: verify canvas context
+    const ctx = canvas.getContext();
+    console.log('🎨 Canvas context:', ctx ? 'OK' : 'MISSING');
+    console.log('🖼️ Canvas element dimensions:', canvasEl.width, 'x', canvasEl.height);
+    
+    // CRITICAL: Check if Fabric is using dual-layer canvas (upper for drawing, lower for static)
+    const upperCanvas = canvas.upperCanvasEl;
+    const lowerCanvas = canvas.lowerCanvasEl;
+    console.log('📊 Upper canvas (drawing layer):', upperCanvas ? 'EXISTS' : 'MISSING');
+    console.log('📊 Lower canvas (static layer):', lowerCanvas ? 'EXISTS' : 'MISSING');
+    
     // Cleanup
     return () => {
       if (fabricCanvasRef.current) {
@@ -77,6 +104,43 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
     };
   }, []);
 
+  // Temporarily disabled pointer override to debug drawing issues
+  // useEffect(() => {
+  //   const canvas = fabricCanvasRef.current;
+  //   if (!canvas) return;
+
+  //   if (!baseGetPointerRef.current) {
+  //     baseGetPointerRef.current = canvas.getPointer.bind(canvas);
+  //   }
+
+  //   canvas.getPointer = (event, ignoreZoom) => {
+  //     const pointer = baseGetPointerRef.current(event, ignoreZoom);
+  //     const width = canvas.getWidth() || CANVAS_WIDTH;
+  //     const height = canvas.getHeight() || CANVAS_HEIGHT;
+
+  //     if (!width || !height || !pointer) {
+  //       return pointer;
+  //     }
+
+  //     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+  //     const normalizedX = clamp(pointer.x, 0, width) / width;
+  //     const normalizedY = clamp(pointer.y, 0, height) / height;
+
+  //     pointer.x = normalizedY * width;
+  //     pointer.y = (1 - normalizedX) * height;
+
+  //     return pointer;
+  //   };
+
+  //   canvas.calcOffset();
+
+  //   return () => {
+  //     if (canvas && baseGetPointerRef.current) {
+  //       canvas.getPointer = baseGetPointerRef.current;
+  //     }
+  //   };
+  // }, [canvasRotation, CANVAS_HEIGHT, CANVAS_WIDTH]);
+
   // Update brush settings when they change
   useEffect(() => {
     if (fabricCanvasRef.current && fabricCanvasRef.current.freeDrawingBrush) {
@@ -84,13 +148,16 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
       fabricCanvasRef.current.freeDrawingBrush.width = brushWidth;
       fabricCanvasRef.current.freeDrawingBrush.strokeLineCap = 'round';
       fabricCanvasRef.current.freeDrawingBrush.strokeLineJoin = 'round';
+      console.log('🎨 Brush updated:', { color: brushColor, width: brushWidth });
     }
   }, [brushColor, brushWidth]);
 
   // Update drawing mode
   useEffect(() => {
     if (fabricCanvasRef.current) {
-      fabricCanvasRef.current.isDrawingMode = drawingMode === 'pencil';
+      const isDrawing = drawingMode === 'pencil';
+      fabricCanvasRef.current.isDrawingMode = isDrawing;
+      console.log('🖊️ Drawing mode set to:', isDrawing ? 'PENCIL (enabled)' : 'SELECT (disabled)');
     }
   }, [drawingMode]);
 
@@ -222,35 +289,48 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
   };
 
   const rotateCanvas = () => {
-    setCanvasRotation((prev) => (prev + 90) % 360);
+    alert('Canvas rotation is locked so the digitizer stays calibrated. Use Calibrate if the pen drifts.');
   };
 
   const calibrateCanvas = () => {
     if (fabricCanvasRef.current) {
-      // Reset zoom and pan to ensure 1:1 mapping
-      fabricCanvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
-      fabricCanvasRef.current.renderAll();
+      // Reset zoom and pan to ensure 1:1 mapping for portrait mode
+    fabricCanvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    fabricCanvasRef.current.renderAll();
+    fabricCanvasRef.current.calcOffset();
       
-      console.log('✅ A4 Canvas calibrated for digitizer');
-      console.log('📐 Physical A4: 210mm × 297mm');
-      console.log(`🖥️ Digital Canvas: ${A4_WIDTH}px × ${A4_HEIGHT}px`);
-      console.log('🎯 Pen alignment: Direct 1:1 mapping');
-      console.log('📍 Place your A4 paper to align with screen canvas edges');
+      console.log('✅ Portrait Canvas calibrated for digitizer pen');
+      console.log('📐 Physical Paper: 8 inches × 11 inches (PORTRAIT)');
+      console.log(`🖥️ Digital Canvas: ${CANVAS_WIDTH}px × ${CANVAS_HEIGHT}px`);
+      console.log('🖊️ Pen Mode: Socket mode enabled (NOT mouse mode)');
+      console.log('🎯 Pen alignment: Direct 1:1 portrait mapping');
+      console.log('📍 Setup: Place 8×11 paper vertically (portrait orientation)');
+    console.log('🔁 Digitizer input rotated 90° to match portrait canvas');
       
-      alert(`✅ Digitizer Canvas Calibrated!
+      alert(`✅ Portrait Canvas Calibrated!
 
-📐 Physical A4 Paper: 210mm × 297mm
-🖥️ Digital Canvas: High-resolution A4 matching
+📐 Physical Paper: 8 inches × 11 inches (PORTRAIT)
+🖥️ Digital Canvas: High-resolution portrait mode
+
+🔁 Digitizer input rotated 90° to match on-screen portrait canvas
 
 🎯 SETUP INSTRUCTIONS:
-1. Place A4 paper on your digitizer tablet
-2. Align the paper edges with the blue canvas border on screen
-3. The top-left corner of paper = top-left of blue canvas
-4. The bottom-right corner of paper = bottom-right of blue canvas
+1. Place your 8×11 inch paper VERTICALLY (portrait) on digitizer
+2. Align paper edges with the blue canvas border on screen
+3. Top-left corner of paper = top-left of blue canvas
+4. Bottom-right corner of paper = bottom-right of blue canvas
 
-🖊️ Your pen touches will now map exactly to the canvas!
+🖊️ PEN MODE (Socket Mode):
+Your digitizer is now in PEN mode, not mouse mode!
+- Direct pen input capture
+- Precise coordinate mapping
+- Natural writing experience
 
-💡 TIP: Use the corner marks as reference points`);
+📍 PORTRAIT ORIENTATION:
+Canvas is 8" wide × 11" tall (vertical/portrait)
+Your digitizer input is automatically transformed to match!
+
+💡 TIP: If the pen drifts, tap Calibrate again before writing`);
     }
   };
 
@@ -338,98 +418,35 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
             ref={canvasContainerRef}
             className="canvas-wrapper"
             style={{ 
-              width: `${A4_WIDTH}px`,
-              height: `${A4_HEIGHT}px`,
-              maxWidth: '90vw', // Responsive but maintains aspect ratio
-              maxHeight: '80vh',
-              transform: `rotate(${canvasRotation}deg)`,
-              transformOrigin: 'center center',
-              transition: 'transform 0.3s ease',
+              width: `${CANVAS_WIDTH}px`,
+              height: `${CANVAS_HEIGHT}px`,
+              maxWidth: '60vw',
+              maxHeight: '85vh',
               position: 'relative',
               margin: '20px auto',
               padding: '20px',
-              background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
               borderRadius: '12px',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              overflow: 'hidden'
             }}
           >
-            {/* Corner markers for alignment */}
-            <div style={{
-              position: 'absolute',
-              top: '10px',
-              left: '10px',
-              width: '30px',
-              height: '30px',
-              borderTop: '4px solid #ef4444',
-              borderLeft: '4px solid #ef4444',
-              zIndex: 10,
-              pointerEvents: 'none'
-            }} />
-            <div style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              width: '30px',
-              height: '30px',
-              borderTop: '4px solid #ef4444',
-              borderRight: '4px solid #ef4444',
-              zIndex: 10,
-              pointerEvents: 'none'
-            }} />
-            <div style={{
-              position: 'absolute',
-              bottom: '10px',
-              left: '10px',
-              width: '30px',
-              height: '30px',
-              borderBottom: '4px solid #ef4444',
-              borderLeft: '4px solid #ef4444',
-              zIndex: 10,
-              pointerEvents: 'none'
-            }} />
-            <div style={{
-              position: 'absolute',
-              bottom: '10px',
-              right: '10px',
-              width: '30px',
-              height: '30px',
-              borderBottom: '4px solid #ef4444',
-              borderRight: '4px solid #ef4444',
-              zIndex: 10,
-              pointerEvents: 'none'
-            }} />
-            
-            {/* A4 size label */}
-            <div style={{
-              position: 'absolute',
-              top: '-25px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: '#3b82f6',
-              color: 'white',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: '600',
-              zIndex: 10,
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap'
-            }}>
-              📄 A4 Paper (210mm × 297mm) - Align your paper with the corners
-            </div>
-
             <canvas 
               ref={canvasRef}
               style={{
-                border: '4px solid #2563eb',
-                borderRadius: '4px',
-                boxShadow: '0 4px 20px rgba(37, 99, 235, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.5)',
+                border: '4px solid #3b82f6',
+                borderRadius: '8px',
+                boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4), inset 0 0 0 2px rgba(255, 255, 255, 0.1)',
                 cursor: 'crosshair',
                 touchAction: 'none',
                 display: 'block',
                 background: '#ffffff',
-                width: '100%',
-                height: '100%',
+                pointerEvents: 'auto',
+                maxWidth: '100%',
+                maxHeight: '100%',
                 objectFit: 'contain'
               }}
             />

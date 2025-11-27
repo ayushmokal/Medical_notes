@@ -118,7 +118,7 @@
   justify-content: flex-start;
   align-items: center;
   overflow: auto;
-  background: #1e293b;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-md);
@@ -128,15 +128,16 @@
 .drawing-tools {
   display: flex;
   gap: 20px;
-  padding: 15px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-bottom: 20px;
   flex-wrap: wrap;
   align-items: center;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
+  border: 2px solid #e2e8f0;
 }
 
 .tool-group {
@@ -194,25 +195,27 @@
   -webkit-backface-visibility: hidden;
 }
 
-/* Ensure canvas has perfect 1:1 pixel mapping */
+/* CRITICAL: Ensure canvas has perfect 1:1 pixel mapping for PEN MODE (not mouse) */
 .canvas-wrapper canvas {
-  /* CRITICAL: Prevent any scaling or transforms */
+  /* CRITICAL: Prevent any scaling or transforms that affect pen coordinates */
   transform: none !important;
   image-rendering: auto;
-  /* Ensure sharp rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Perfect pointer event handling for digitizer pen */
+  
+  /* CRITICAL: Perfect pointer event handling for digitizer pen in socket/pen mode */
   pointer-events: auto !important;
   touch-action: none !important;
   user-select: none !important;
   -webkit-user-select: none !important;
   -webkit-touch-callout: none !important;
-  /* Prevent context menu on right-click/long-press */
   -webkit-context-menu: none !important;
+  
+  /* Ensure pen events are captured, not mouse events */
+  cursor: crosshair !important;
 }
 
-/* Optimize for pen input - prevent any lag */
+/* Optimize for pen input - prevent any lag or coordinate offset */
 .canvas-wrapper canvas:active {
   cursor: crosshair !important;
 }
@@ -222,7 +225,7 @@
   position: relative;
 }
 
-/* Remove old styles that interfere with pen input */
+/* Portrait mode optimizations complete */
 
 .side-panel {
   width: 350px;
