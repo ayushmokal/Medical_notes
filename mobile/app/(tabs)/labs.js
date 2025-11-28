@@ -1,120 +1,120 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const MOCK_LABS = [
-    { id: '1', title: 'Lipid Panel', date: 'Nov 20, 2025', status: 'Analyzed' },
-    { id: '2', title: 'Complete Blood Count', date: 'Oct 15, 2025', status: 'Analyzed' },
-];
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Labs() {
-    const renderItem = ({ item }) => (
-        <View style={styles.card}>
-            <View style={styles.iconContainer}>
-                <Ionicons name="document-text" size={24} color="#007AFF" />
-            </View>
-            <View style={styles.infoContainer}>
-                <Text style={styles.labTitle}>{item.title}</Text>
-                <Text style={styles.labDate}>{item.date}</Text>
-            </View>
-            <View style={styles.statusContainer}>
-                <Text style={styles.statusText}>{item.status}</Text>
-            </View>
-        </View>
-    );
-
     return (
-        <View style={styles.container}>
-            <Text style={styles.headerTitle}>Lab Reports</Text>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Lab Results</Text>
+                <TouchableOpacity style={styles.uploadButton}>
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                </TouchableOpacity>
+            </View>
 
-            <FlatList
-                data={MOCK_LABS}
-                renderItem={renderItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.listContent}
-            />
+            <Text style={styles.sectionHeader}>Recent Reports</Text>
 
-            <TouchableOpacity style={styles.fab} onPress={() => console.log('Upload pressed')}>
-                <Ionicons name="add" size={30} color="#fff" />
-            </TouchableOpacity>
-        </View>
+            <View style={styles.emptyStateContainer}>
+                <View style={styles.emptyStateCard}>
+                    <View style={styles.iconCircle}>
+                        <Ionicons name="document-text-outline" size={32} color="#3b82f6" />
+                    </View>
+                    <Text style={styles.emptyTitle}>No lab reports yet</Text>
+                    <Text style={styles.emptyDesc}>
+                        Upload your first lab report to start tracking your health markers and trends over time.
+                    </Text>
+                    <TouchableOpacity style={styles.mainUploadButton}>
+                        <Text style={styles.mainUploadButtonText}>Upload Lab Report</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: 60,
+        backgroundColor: '#0f172a',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        marginBottom: 24,
     },
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        paddingHorizontal: 20,
-        marginBottom: 20,
+        color: '#f8fafc',
     },
-    listContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 80,
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 15,
-        padding: 15,
-        marginBottom: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
+    uploadButton: {
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#E3F2FD',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 15,
     },
-    infoContainer: {
-        flex: 1,
-    },
-    labTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    labDate: {
+    uploadButtonText: {
+        color: '#3b82f6',
+        fontWeight: '600',
         fontSize: 14,
-        color: '#999',
     },
-    statusContainer: {
-        backgroundColor: '#E8F5E9',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+    sectionHeader: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#f8fafc',
+        paddingHorizontal: 20,
+        marginBottom: 16,
     },
-    statusText: {
-        fontSize: 12,
-        color: '#2E7D32',
-        fontWeight: 'bold',
+    emptyStateContainer: {
+        flex: 1,
+        paddingHorizontal: 20,
+        justifyContent: 'center',
+        paddingBottom: 100,
     },
-    fab: {
-        position: 'absolute',
-        bottom: 30,
-        right: 30,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#007AFF',
+    emptyStateCard: {
+        backgroundColor: '#1e293b',
+        borderRadius: 24,
+        padding: 32,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#334155',
+        borderStyle: 'dashed',
+    },
+    iconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
+        marginBottom: 16,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#f8fafc',
+        marginBottom: 8,
+    },
+    emptyDesc: {
+        fontSize: 14,
+        color: '#94a3b8',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 24,
+    },
+    mainUploadButton: {
+        backgroundColor: '#3b82f6',
+        width: '100%',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    mainUploadButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

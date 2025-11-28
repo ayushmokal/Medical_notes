@@ -8,6 +8,7 @@ const AddPatient = ({ onAddPatient, onCancel }) => {
     dateOfBirth: '',
     phoneNumber: '',
     email: '',
+    password: '',
     address: '',
     emergencyContact: '',
     insuranceInfo: '',
@@ -115,6 +116,19 @@ const AddPatient = ({ onAddPatient, onCancel }) => {
               onChange={handleChange}
               required
               placeholder="patient@example.com"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Password *</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              placeholder="Set initial password"
+              minLength="6"
             />
           </div>
 

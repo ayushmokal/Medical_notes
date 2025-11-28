@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { patientService } from '../services/patientService';
 import { notesService } from '../services/notesService';
+import { doctorService } from '../services/doctorService';
 import PatientList from './PatientList';
 import AddPatient from './AddPatient';
 import NoteSession from './NoteSession';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
@@ -19,9 +22,29 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSessions, setExpandedSessions] = useState({});
 
+  // Doctor Profile State
+  const [doctorProfile, setDoctorProfile] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    fullName: '',
+    specialty: '',
+    hospital: ''
+  });
+
   useEffect(() => {
-    loadPatients();
+    if (currentUser) {
+      loadPatients();
+      loadDoctorProfile();
+    }
   }, [currentUser]);
+
+  const loadDoctorProfile = async () => {
+    const result = await doctorService.getDoctorProfile(currentUser.uid);
+    if (result.success) {
+      setDoctorProfile(result.profile);
+      setProfileForm(result.profile);
+    }
+  };
 
   const loadPatients = async () => {
     if (currentUser) {
@@ -30,6 +53,33 @@ const Dashboard = () => {
         setPatients(result.patients);
       }
       setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+      await doctorService.saveDoctorProfile(currentUser.uid, profileForm);
+      setDoctorProfile(profileForm);
+      setShowProfileModal(false);
+      alert('Profile saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Error saving profile. Please try again.');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedPatient?.email) return;
+
+    if (window.confirm(`Send password reset email to ${selectedPatient.email}?`)) {
+      try {
+        await sendPasswordResetEmail(auth, selectedPatient.email);
+        alert(`Password reset email sent to ${selectedPatient.email}`);
+      } catch (error) {
+        console.error('Error sending reset email:', error);
+        alert('Error sending reset email: ' + error.message);
+      }
     }
   };
 
@@ -45,7 +95,7 @@ const Dashboard = () => {
   const handlePatientSelect = async (patient) => {
     setSelectedPatient(patient);
     setActiveSession(false);
-    
+
     // Load patient's previous sessions
     setLoadingNotes(true);
     console.log('🔍 Loading notes for patient:', patient.id);
@@ -96,7 +146,7 @@ const Dashboard = () => {
   // Helper function to render data values (handles objects and strings)
   const renderDataValue = (value) => {
     if (!value) return null;
-    
+
     // If it's an object, format it nicely
     if (typeof value === 'object' && !Array.isArray(value)) {
       return (
@@ -109,7 +159,7 @@ const Dashboard = () => {
         </div>
       );
     }
-    
+
     // If it's a string or other primitive, return as is
     return value;
   };
@@ -130,15 +180,21 @@ const Dashboard = () => {
       doc.setTextColor(0, 0, 0);
       doc.text(`Patient: ${selectedPatient.fullName}`, 20, 35);
       doc.text(`Patient ID: ${selectedPatient.id}`, 20, 42);
-      
+
       // Session Info
-      const sessionDate = note.createdAt 
+      const sessionDate = note.createdAt
         ? new Date(note.createdAt.seconds * 1000).toLocaleString()
-        : note.sessionDate 
-        ? new Date(note.sessionDate).toLocaleString()
-        : 'Date not available';
+        : note.sessionDate
+          ? new Date(note.sessionDate).toLocaleString()
+          : 'Date not available';
       doc.text(`Session Date: ${sessionDate}`, 20, 49);
       doc.text(`Session ID: ${note.id}`, 20, 56);
+
+      // Doctor Info (if available)
+      if (doctorProfile) {
+        doc.text(`Doctor: ${doctorProfile.fullName}`, 120, 35);
+        doc.text(`Specialty: ${doctorProfile.specialty}`, 120, 42);
+      }
 
       // Line separator
       doc.setDrawColor(200, 200, 200);
@@ -171,7 +227,7 @@ const Dashboard = () => {
             doc.setFont(undefined, 'bold');
             doc.text(`${field.label}:`, 20, yPos);
             doc.setFont(undefined, 'normal');
-            
+
             const text = note.extractedData[field.key];
             const lines = doc.splitTextToSize(text, 170);
             doc.text(lines, 20, yPos + 6);
@@ -229,26 +285,26 @@ const Dashboard = () => {
   // Filter notes based on search query
   const filteredNotes = patientNotes.filter(note => {
     if (!searchQuery.trim()) return true;
-    
+
     const searchLower = searchQuery.toLowerCase();
-    
+
     // Search in raw text
     if (note.rawText && note.rawText.toLowerCase().includes(searchLower)) return true;
-    
+
     // Search in extracted data
     if (note.extractedData) {
       const dataString = JSON.stringify(note.extractedData).toLowerCase();
       if (dataString.includes(searchLower)) return true;
     }
-    
+
     // Search in date
-    const dateStr = note.createdAt 
+    const dateStr = note.createdAt
       ? new Date(note.createdAt.seconds * 1000).toLocaleString().toLowerCase()
-      : note.sessionDate 
-      ? new Date(note.sessionDate).toLocaleString().toLowerCase()
-      : '';
+      : note.sessionDate
+        ? new Date(note.sessionDate).toLocaleString().toLowerCase()
+        : '';
     if (dateStr.includes(searchLower)) return true;
-    
+
     return false;
   });
 
@@ -267,10 +323,62 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <h1>Medical Notes System</h1>
         <div className="header-actions">
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="btn-secondary"
+            style={{ marginRight: '10px' }}
+          >
+            {doctorProfile ? '👨‍⚕️ Profile' : '⚠️ Setup Profile'}
+          </button>
           <span className="user-email">{currentUser?.email}</span>
           <button onClick={handleLogout} className="btn-secondary">Logout</button>
         </div>
       </header>
+
+      {/* Doctor Profile Modal */}
+      {showProfileModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Doctor Profile</h2>
+            <form onSubmit={handleSaveProfile} className="profile-form">
+              <div className="form-group">
+                <label>Full Name (e.g. Dr. Michael Chen)</label>
+                <input
+                  type="text"
+                  value={profileForm.fullName}
+                  onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                  required
+                  placeholder="Dr. Name"
+                />
+              </div>
+              <div className="form-group">
+                <label>Specialty (e.g. Cardiology)</label>
+                <input
+                  type="text"
+                  value={profileForm.specialty}
+                  onChange={(e) => setProfileForm({ ...profileForm, specialty: e.target.value })}
+                  required
+                  placeholder="Specialty"
+                />
+              </div>
+              <div className="form-group">
+                <label>Hospital / Clinic</label>
+                <input
+                  type="text"
+                  value={profileForm.hospital}
+                  onChange={(e) => setProfileForm({ ...profileForm, hospital: e.target.value })}
+                  required
+                  placeholder="Hospital Name"
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" onClick={() => setShowProfileModal(false)} className="btn-secondary">Cancel</button>
+                <button type="submit" className="btn-primary">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-content">
         {showAddPatient ? (
@@ -323,14 +431,19 @@ const Dashboard = () => {
                   <p>{selectedPatient.medicalHistory}</p>
                 </div>
               </div>
-              <button onClick={handleStartSession} className="btn-primary btn-large">
-                Start New Session
-              </button>
+              <div className="action-buttons">
+                <button onClick={handleStartSession} className="btn-primary btn-large">
+                  Start New Session
+                </button>
+                <button onClick={handleResetPassword} className="btn-secondary btn-large" style={{ marginLeft: '10px' }}>
+                  Reset Password
+                </button>
+              </div>
 
               {/* Previous Sessions Section */}
               <div className="previous-sessions">
                 <h3>📋 Previous Sessions</h3>
-                
+
                 {/* Search Bar */}
                 {patientNotes.length > 0 && (
                   <div className="search-bar">
@@ -342,7 +455,7 @@ const Dashboard = () => {
                       className="search-input"
                     />
                     {searchQuery && (
-                      <button 
+                      <button
                         onClick={() => setSearchQuery('')}
                         className="clear-search-btn"
                         title="Clear search"
@@ -371,24 +484,24 @@ const Dashboard = () => {
                     {filteredNotes.map((note, index) => {
                       // Calculate session number (newest first, so reverse index)
                       const sessionNumber = filteredNotes.length - index;
-                      
+
                       // Generate smart session name
-                      const sessionDate = note.createdAt 
+                      const sessionDate = note.createdAt
                         ? new Date(note.createdAt.seconds * 1000)
-                        : note.sessionDate 
-                        ? new Date(note.sessionDate)
-                        : null;
-                      
-                      const dateStr = sessionDate 
+                        : note.sessionDate
+                          ? new Date(note.sessionDate)
+                          : null;
+
+                      const dateStr = sessionDate
                         ? sessionDate.toLocaleString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
                         : 'Date not available';
-                      
+
                       // Extract diagnosis or chief complaint for session name
                       let sessionTitle = '';
                       if (note.extractedData?.diagnosis) {
@@ -396,21 +509,21 @@ const Dashboard = () => {
                       } else if (note.extractedData?.chiefComplaint) {
                         sessionTitle = note.extractedData.chiefComplaint;
                       } else if (note.extractedData?.symptoms && note.extractedData.symptoms.length > 0) {
-                        sessionTitle = Array.isArray(note.extractedData.symptoms) 
+                        sessionTitle = Array.isArray(note.extractedData.symptoms)
                           ? note.extractedData.symptoms[0]
                           : note.extractedData.symptoms;
                       }
-                      
+
                       // Truncate if too long
                       if (sessionTitle && sessionTitle.length > 50) {
                         sessionTitle = sessionTitle.substring(0, 50) + '...';
                       }
-                      
+
                       const isExpanded = expandedSessions[note.id];
-                      
+
                       return (
                         <div key={note.id} className="session-card">
-                          <div 
+                          <div
                             className="session-header clickable"
                             onClick={() => toggleSessionExpanded(note.id)}
                           >
@@ -436,7 +549,7 @@ const Dashboard = () => {
                               </button>
                             </div>
                           </div>
-                          
+
                           {/* Collapsible Session Content */}
                           {isExpanded && (
                             <div className="session-content">
@@ -445,7 +558,7 @@ const Dashboard = () => {
                                 <h5>🖼️ Handwritten Notes</h5>
                                 <div className="canvas-snapshot">
                                   {note.snapshotUrl ? (
-                                    <img 
+                                    <img
                                       src={note.snapshotUrl}
                                       alt="Handwritten notes"
                                       className="snapshot-image"
@@ -456,7 +569,7 @@ const Dashboard = () => {
                                       }}
                                     />
                                   ) : (
-                                    <img 
+                                    <img
                                       src={`https://firebasestorage.googleapis.com/v0/b/medical-notes-system.appspot.com/o/notes%2F${encodeURIComponent(selectedPatient.id)}%2F${encodeURIComponent(note.id)}%2Fsnapshot.png?alt=media`}
                                       alt="Handwritten notes"
                                       className="snapshot-image"

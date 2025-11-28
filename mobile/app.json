@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,10 +16,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.carecanvas.mobile",
-      "infoPlist": {
-        "NSHealthShareUsageDescription": "We need access to your health data to provide insights.",
-        "NSHealthUpdateUsageDescription": "We need access to update your health data."
-      }
+      "NSHealthShareUsageDescription": "We need access to your health data to provide insights.",
+      "NSHealthUpdateUsageDescription": "We need access to update your health data."
+    },
+    "entitlements": {
+      "com.apple.developer.healthkit": true
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +31,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "react-native-health"
+    ]
   }
 }

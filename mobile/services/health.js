@@ -1,4 +1,11 @@
-import AppleHealthKit from 'react-native-health';
+let AppleHealthKit = require('react-native-health').default;
+if (!AppleHealthKit) {
+    AppleHealthKit = require('react-native-health');
+}
+
+
+
+
 
 const permissions = {
     permissions: {
@@ -6,6 +13,9 @@ const permissions = {
             AppleHealthKit.Constants.Permissions.StepCount,
             AppleHealthKit.Constants.Permissions.SleepAnalysis,
             AppleHealthKit.Constants.Permissions.HeartRate,
+            AppleHealthKit.Constants.Permissions.HeartRateVariability,
+            AppleHealthKit.Constants.Permissions.ActiveEnergyBurned,
+            AppleHealthKit.Constants.Permissions.RestingHeartRate,
         ],
     },
 };
@@ -47,6 +57,40 @@ export const getSleepSamples = (startDate, endDate) => {
         };
 
         AppleHealthKit.getSleepSamples(options, (err, results) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(results);
+        });
+    });
+};
+
+export const getHeartRateVariability = (startDate, endDate) => {
+    return new Promise((resolve, reject) => {
+        const options = {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+        };
+
+        AppleHealthKit.getHeartRateVariabilitySamples(options, (err, results) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(results);
+        });
+    });
+};
+
+export const getActiveEnergyBurned = (startDate, endDate) => {
+    return new Promise((resolve, reject) => {
+        const options = {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+        };
+
+        AppleHealthKit.getActiveEnergyBurned(options, (err, results) => {
             if (err) {
                 reject(err);
                 return;

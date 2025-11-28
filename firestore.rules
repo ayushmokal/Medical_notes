@@ -45,5 +45,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && 
                        resource.data.doctorId == request.auth.uid;
     }
+    // Doctors collection
+    // Allow any authenticated user to read doctor profiles
+    // Allow doctors to write only their own profile
+    match /doctors/{doctorId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == doctorId;
+    }
   }
 }
