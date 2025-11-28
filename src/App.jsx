@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import PatientOverview from './components/PatientOverview';
 import './styles/App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -20,21 +21,29 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               <PublicRoute>
                 <Login />
               </PublicRoute>
-            } 
+            }
           />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <PrivateRoute>
                 <Dashboard />
               </PrivateRoute>
-            } 
+            }
+          />
+          <Route
+            path="/patient/:id"
+            element={
+              <PrivateRoute>
+                <PatientOverview />
+              </PrivateRoute>
+            }
           />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>

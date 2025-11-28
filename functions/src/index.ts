@@ -1,32 +1,52 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
+import { setGlobalOptions } from "firebase-functions";
+import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import * as admin from "firebase-admin";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+admin.initializeApp();
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+export const chatWithCoach = onCall(async (request) => {
+    const { message, history } = request.data;
+    const uid = request.auth?.uid;
+
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    logger.info("Chat with coach", { uid, message });
+
+    // Mock AI response for now
+    // In production, use Genkit or OpenAI API here
+    const response = "I'm your AI health coach. I see you're doing great! (Mock Response)";
+
+    return {
+        response,
+        timestamp: new Date().toISOString()
+    };
+});
+
+export const calculateScores = onCall(async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    // Mock score calculation
+    // In production, fetch health metrics from Firestore and calculate
+    const scores = {
+        sleep: Math.floor(Math.random() * 30) + 70,
+        recovery: Math.floor(Math.random() * 30) + 70,
+        activity: Math.floor(Math.random() * 30) + 70,
+        date: new Date().toISOString()
+    };
+
+    // Save to Firestore
+    await admin.firestore().collection("user_scores").add({
+        uid,
+        ...scores
+    });
+
+    return scores;
+});

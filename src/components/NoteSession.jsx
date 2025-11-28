@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Canvas as FabricCanvas, PencilBrush } from 'fabric';
 import { notesService } from '../services/notesService';
 import geminiOcrService from '../services/geminiOcrService';
+import SessionContext from './SessionContext';
 import '../styles/NoteSession.css';
 
 const NoteSession = ({ patient, doctorId, onEndSession }) => {
@@ -10,11 +11,12 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPanel, setShowPanel] = useState(true);
+  const [showContext, setShowContext] = useState(true);
   const [canvasRotation, setCanvasRotation] = useState(0);
   const [drawingMode, setDrawingMode] = useState('pencil');
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushWidth, setBrushWidth] = useState(2);
-  
+
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const baseGetPointerRef = useRef(null);
@@ -83,18 +85,18 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
 
     // CRITICAL: Force initial render to establish canvas context
     canvas.renderAll();
-    
+
     // Additional check: verify canvas context
     const ctx = canvas.getContext();
     console.log('🎨 Canvas context:', ctx ? 'OK' : 'MISSING');
     console.log('🖼️ Canvas element dimensions:', canvasEl.width, 'x', canvasEl.height);
-    
+
     // CRITICAL: Check if Fabric is using dual-layer canvas (upper for drawing, lower for static)
     const upperCanvas = canvas.upperCanvasEl;
     const lowerCanvas = canvas.lowerCanvasEl;
     console.log('📊 Upper canvas (drawing layer):', upperCanvas ? 'EXISTS' : 'MISSING');
     console.log('📊 Lower canvas (static layer):', lowerCanvas ? 'EXISTS' : 'MISSING');
-    
+
     // Cleanup
     return () => {
       if (fabricCanvasRef.current) {
@@ -174,39 +176,39 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
       });
 
       console.log('🚀 Extracting medical data with Gemini 2.0 Flash...');
-      
+
       // Use Gemini AI for OCR - optimized for medical handwriting
       const geminiResult = await geminiOcrService.extractFromCanvas(imageDataUrl);
-      
+
       if (geminiResult.success && geminiResult.data) {
         console.log('✅ Gemini OCR successful - 94% accuracy');
         console.log('📊 Extracted data:', geminiResult.data);
-        
+
         // Extract full text
-        const fullText = geminiResult.data.fullText || 
-                        geminiResult.data.extractedText || 
-                        JSON.stringify(geminiResult.data, null, 2);
-        
+        const fullText = geminiResult.data.fullText ||
+          geminiResult.data.extractedText ||
+          JSON.stringify(geminiResult.data, null, 2);
+
         setExtractedText(fullText);
         setExtractedData(geminiResult.data);
-        
+
         // Show success with details
         const dataPreview = [];
         if (geminiResult.data.vitals) dataPreview.push('✓ Vitals extracted');
         if (geminiResult.data.symptoms?.length) dataPreview.push(`✓ ${geminiResult.data.symptoms.length} symptoms`);
         if (geminiResult.data.diagnosis) dataPreview.push('✓ Diagnosis found');
         if (geminiResult.data.medications?.length) dataPreview.push(`✓ ${geminiResult.data.medications.length} medications`);
-        
+
         alert(`✅ Gemini AI Extraction Complete!\n\n${dataPreview.join('\n') || 'Medical data extracted'}\n\nModel: Gemini 2.0 Flash\nAccuracy: 94%`);
       } else {
         throw new Error(geminiResult.error || 'Gemini extraction failed');
       }
     } catch (error) {
       console.error('❌ Gemini OCR Error:', error);
-      
+
       // Provide helpful error message
       let errorMsg = 'Failed to extract text with Gemini AI.\n\n';
-      
+
       if (error.message.includes('API key')) {
         errorMsg += '⚠️ API Key Issue\nCheck your Gemini API key in .env file';
       } else if (error.message.includes('quota')) {
@@ -216,7 +218,7 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
       } else {
         errorMsg += `Error: ${error.message}`;
       }
-      
+
       alert(errorMsg);
     } finally {
       setIsExtracting(false);
@@ -231,7 +233,7 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
       console.log('💾 Starting save process...');
       console.log('📋 Patient ID:', patient.id);
       console.log('👨‍⚕️ Doctor ID:', doctorId);
-      
+
       // Export canvas as PNG
       const snapshotData = fabricCanvasRef.current.toDataURL({
         format: 'png',
@@ -248,7 +250,7 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
         extractedData: extractedData || {},
         sessionDate: new Date().toISOString()
       };
-      
+
       console.log('📝 Note data:', noteData);
 
       const noteResult = await notesService.addNote(patient.id, doctorId, noteData);
@@ -256,11 +258,11 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
 
       if (noteResult.success) {
         console.log('🆔 Note ID:', noteResult.noteId);
-        
+
         // Save snapshot to storage
         const snapshotResult = await notesService.saveCanvasSnapshot(patient.id, noteResult.noteId, snapshotData);
         console.log('📸 Snapshot save result:', snapshotResult);
-        
+
         // Save canvas data to storage
         const canvasResult = await notesService.saveCanvasData(patient.id, noteResult.noteId, canvasData);
         console.log('🎨 Canvas data save result:', canvasResult);
@@ -295,18 +297,18 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
   const calibrateCanvas = () => {
     if (fabricCanvasRef.current) {
       // Reset zoom and pan to ensure 1:1 mapping for portrait mode
-    fabricCanvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    fabricCanvasRef.current.renderAll();
-    fabricCanvasRef.current.calcOffset();
-      
+      fabricCanvasRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      fabricCanvasRef.current.renderAll();
+      fabricCanvasRef.current.calcOffset();
+
       console.log('✅ Portrait Canvas calibrated for digitizer pen');
       console.log('📐 Physical Paper: 8 inches × 11 inches (PORTRAIT)');
       console.log(`🖥️ Digital Canvas: ${CANVAS_WIDTH}px × ${CANVAS_HEIGHT}px`);
       console.log('🖊️ Pen Mode: Socket mode enabled (NOT mouse mode)');
       console.log('🎯 Pen alignment: Direct 1:1 portrait mapping');
       console.log('📍 Setup: Place 8×11 paper vertically (portrait orientation)');
-    console.log('🔁 Digitizer input rotated 90° to match portrait canvas');
-      
+      console.log('🔁 Digitizer input rotated 90° to match portrait canvas');
+
       alert(`✅ Portrait Canvas Calibrated!
 
 📐 Physical Paper: 8 inches × 11 inches (PORTRAIT)
@@ -369,22 +371,27 @@ Your digitizer input is automatically transformed to match!
           <button onClick={rotateCanvas} className="btn-rotate" title="Rotate canvas 90°">
             🔄 Rotate ({canvasRotation}°)
           </button>
+          <button onClick={() => setShowContext(!showContext)} className="btn-toggle-panel">
+            {showContext ? 'Hide' : 'Show'} Context
+          </button>
           <button onClick={() => setShowPanel(!showPanel)} className="btn-toggle-panel">
             {showPanel ? 'Hide' : 'Show'} Panel
           </button>
         </div>
       </header>
 
-      <div className="session-content">
+      <div className="session-content" style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
+        {showContext && <SessionContext patientId={patient.id} />}
+
         {/* Main Canvas Area - Fabric.js A4 Canvas */}
-        <div className="canvas-area">
+        <div className="canvas-area" style={{ flex: 1, overflow: 'auto' }}>
           <div className="drawing-tools">
             <div className="tool-group">
               <label>Brush Size:</label>
-              <input 
-                type="range" 
-                min="1" 
-                max="20" 
+              <input
+                type="range"
+                min="1"
+                max="20"
                 value={brushWidth}
                 onChange={(e) => setBrushWidth(parseInt(e.target.value))}
               />
@@ -392,20 +399,20 @@ Your digitizer input is automatically transformed to match!
             </div>
             <div className="tool-group">
               <label>Color:</label>
-              <input 
-                type="color" 
+              <input
+                type="color"
                 value={brushColor}
                 onChange={(e) => setBrushColor(e.target.value)}
               />
             </div>
             <div className="tool-group">
-              <button 
+              <button
                 className={drawingMode === 'pencil' ? 'active' : ''}
                 onClick={() => setDrawingMode('pencil')}
               >
                 ✏️ Draw
               </button>
-              <button 
+              <button
                 className={drawingMode === 'select' ? 'active' : ''}
                 onClick={() => setDrawingMode('select')}
               >
@@ -414,10 +421,10 @@ Your digitizer input is automatically transformed to match!
             </div>
           </div>
 
-          <div 
+          <div
             ref={canvasContainerRef}
             className="canvas-wrapper"
-            style={{ 
+            style={{
               width: `${CANVAS_WIDTH}px`,
               height: `${CANVAS_HEIGHT}px`,
               maxWidth: '60vw',
@@ -434,7 +441,7 @@ Your digitizer input is automatically transformed to match!
               overflow: 'hidden'
             }}
           >
-            <canvas 
+            <canvas
               ref={canvasRef}
               style={{
                 border: '4px solid #3b82f6',
@@ -480,8 +487,8 @@ Your digitizer input is automatically transformed to match!
                 Type or dictate notes here. Use AI extraction to structure data automatically.
               </p>
               <div className="extracted-text">
-                <textarea 
-                  value={extractedText} 
+                <textarea
+                  value={extractedText}
                   onChange={(e) => setExtractedText(e.target.value)}
                   rows="8"
                   placeholder="Type your medical notes here...&#10;&#10;Or use the canvas above to write and extract with AI.&#10;&#10;Example:&#10;C/C: Fever, Cough&#10;BP: 120/80  HR: 72  T: 99F&#10;Dx: URTI&#10;Rx: Amoxicillin 500mg TID x7d"
@@ -502,11 +509,11 @@ Your digitizer input is automatically transformed to match!
                 <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>
                   Powered by Gemini 2.0 Flash - 94% accuracy
                 </p>
-                <button 
-                  onClick={handleExtractText} 
+                <button
+                  onClick={handleExtractText}
                   disabled={isExtracting}
                   className="btn-secondary btn-block"
-                  style={{ 
+                  style={{
                     background: isExtracting ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     color: 'white',
                     fontWeight: '600'
@@ -519,7 +526,7 @@ Your digitizer input is automatically transformed to match!
               {extractedData && (
                 <div className="extracted-data" style={{ marginTop: '15px' }}>
                   <h4>📊 Extracted Medical Data:</h4>
-                  
+
                   {extractedData.vitals && Object.keys(extractedData.vitals).length > 0 && (
                     <div className="data-section">
                       <strong>Vitals:</strong>
@@ -572,14 +579,14 @@ Your digitizer input is automatically transformed to match!
             </div>
 
             <div className="panel-actions">
-              <button 
-                onClick={handleSaveNote} 
+              <button
+                onClick={handleSaveNote}
                 disabled={isSaving}
                 className="btn-primary btn-block"
               >
                 {isSaving ? 'Saving...' : 'Save Note & Extract Data'}
               </button>
-              <button 
+              <button
                 onClick={handleCancelNote}
                 className="btn-danger btn-block"
               >
