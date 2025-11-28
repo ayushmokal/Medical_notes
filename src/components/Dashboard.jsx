@@ -6,6 +6,7 @@ import { doctorService } from '../services/doctorService';
 import PatientList from './PatientList';
 import AddPatient from './AddPatient';
 import NoteSession from './NoteSession';
+import SessionWizard from './SessionWizard';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import '../styles/Dashboard.css';
@@ -21,6 +22,8 @@ const Dashboard = () => {
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSessions, setExpandedSessions] = useState({});
+  const [showSessionWizard, setShowSessionWizard] = useState(false);
+  const [initialSessionData, setInitialSessionData] = useState(null);
 
   // Doctor Profile State
   const [doctorProfile, setDoctorProfile] = useState(null);
@@ -308,11 +311,14 @@ const Dashboard = () => {
     return false;
   });
 
+
+
   if (activeSession && selectedPatient) {
     return (
       <NoteSession
         patient={selectedPatient}
         doctorId={currentUser.uid}
+        initialNotes={initialSessionData}
         onEndSession={handleEndSession}
       />
     );

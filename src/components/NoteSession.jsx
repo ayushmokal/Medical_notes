@@ -3,15 +3,17 @@ import { Canvas as FabricCanvas, PencilBrush } from 'fabric';
 import { notesService } from '../services/notesService';
 import geminiOcrService from '../services/geminiOcrService';
 import SessionContext from './SessionContext';
+import SessionWizard from './SessionWizard';
 import '../styles/NoteSession.css';
 
-const NoteSession = ({ patient, doctorId, onEndSession }) => {
-  const [extractedText, setExtractedText] = useState('');
-  const [extractedData, setExtractedData] = useState(null);
+const NoteSession = ({ patient, doctorId, onEndSession, initialNotes }) => {
+  const [extractedText, setExtractedText] = useState(initialNotes?.rawText || '');
+  const [extractedData, setExtractedData] = useState(initialNotes?.extractedData || null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPanel, setShowPanel] = useState(true);
   const [showContext, setShowContext] = useState(true);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [canvasRotation, setCanvasRotation] = useState(0);
   const [drawingMode, setDrawingMode] = useState('pencil');
   const [brushColor, setBrushColor] = useState('#000000');
@@ -28,7 +30,7 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
   const CANVAS_WIDTH = 8 * CANVAS_DPI;  // 1536px
   const CANVAS_HEIGHT = 11 * CANVAS_DPI; // 2112px
 
-  // Initialize Fabric.js canvas
+  // Initialize Fabric.js canvas - ONLY ONCE
   useEffect(() => {
     if (!canvasRef.current || fabricCanvasRef.current) return;
 
@@ -51,7 +53,9 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
       perPixelTargetFind: true,
       targetFindTolerance: 4,
       // CRITICAL: Force Fabric to use the exact canvas element we provide
-      enablePointerEvents: true
+      enablePointerEvents: true,
+      // IMPORTANT: Prevent canvas from being cleared on state updates
+      preserveObjectStacking: true
     });
 
     // CRITICAL: Set isDrawingMode AFTER canvas creation (not in constructor)
@@ -73,14 +77,17 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
     fabricCanvasRef.current = canvas;
 
     console.log('✅ Canvas initialized successfully');
-    console.log(`📐 Canvas: ${CANVAS_WIDTH}px × ${CANVAS_HEIGHT}px (8in × 11in PORTRAIT)`);
+    console.log(`�� Canvas: ${CANVAS_WIDTH}px × ${CANVAS_HEIGHT}px (8in × 11in PORTRAIT)`);
     console.log('🖊️ Drawing mode enabled');
     console.log('🎨 Brush configured:', { color: brushColor, width: brushWidth });
 
-    // Add event listener to debug drawing
+    // Add event listener to ensure paths are stored and rendered
     canvas.on('path:created', (e) => {
-      console.log('✅ Path created, rendering all');
+      console.log('✅ Path created - ID:', e.path?.id);
+      // Ensure the path is added to the canvas
+      canvas.add(e.path);
       canvas.requestRenderAll();
+      console.log('📊 Total objects on canvas:', canvas.getObjects().length);
     });
 
     // CRITICAL: Force initial render to establish canvas context
@@ -104,7 +111,7 @@ const NoteSession = ({ patient, doctorId, onEndSession }) => {
         fabricCanvasRef.current = null;
       }
     };
-  }, []);
+  }, []); // Empty dependency array - only run once!
 
   // Temporarily disabled pointer override to debug drawing issues
   // useEffect(() => {
@@ -359,6 +366,9 @@ Your digitizer input is automatically transformed to match!
       <header className="session-header">
         <h2>Active Session - {patient.fullName}</h2>
         <div className="header-actions">
+          <button onClick={() => setShowVoiceModal(true)} className="btn-primary" style={{ marginRight: '10px', backgroundColor: '#8b5cf6' }}>
+            🎙️ AI Voice Session
+          </button>
           <button onClick={calibrateCanvas} className="btn-calibrate" title="Calibrate for 1:1 pen alignment">
             🎯 Calibrate
           </button>
@@ -596,6 +606,20 @@ Your digitizer input is automatically transformed to match!
           </div>
         )}
       </div>
+
+      {showVoiceModal && (
+        <SessionWizard
+          patient={patient}
+          isModal={true}
+          onCancel={() => setShowVoiceModal(false)}
+          onComplete={(data) => {
+            setExtractedText(data.rawText);
+            setExtractedData(data.extractedData);
+            setShowVoiceModal(false);
+            setShowPanel(true); // Ensure panel is open to see notes
+          }}
+        />
+      )}
     </div>
   );
 };
