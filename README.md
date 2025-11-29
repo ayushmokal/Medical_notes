@@ -3,7 +3,7 @@
 
 ---
 
-https://youtu.be/MdOjfZeewZg
+[![Watch the video](https://img.youtube.com/vi/MdOjfZeewZg/0.jpg)](https://youtu.be/MdOjfZeewZg)
 
 ## 🎯 Problem Statement
 
