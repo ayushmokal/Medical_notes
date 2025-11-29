@@ -3,6 +3,8 @@
 
 ---
 
+https://youtu.be/MdOjfZeewZg
+
 ## 🎯 Problem Statement
 
 ### Current Challenges in Healthcare Documentation
