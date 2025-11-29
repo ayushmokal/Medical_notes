@@ -437,8 +437,6 @@ Your digitizer input is automatically transformed to match!
             style={{
               width: `${CANVAS_WIDTH}px`,
               height: `${CANVAS_HEIGHT}px`,
-              maxWidth: '60vw',
-              maxHeight: '85vh',
               position: 'relative',
               margin: '20px auto',
               padding: '20px',
@@ -462,9 +460,8 @@ Your digitizer input is automatically transformed to match!
                 display: 'block',
                 background: '#ffffff',
                 pointerEvents: 'auto',
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain'
+                width: `${CANVAS_WIDTH}px`,
+                height: `${CANVAS_HEIGHT}px`
               }}
             />
           </div>

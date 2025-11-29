@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import geminiAudioService from '../services/geminiAudioService';
+import elevenLabsService from '../services/elevenLabsService';
 import '../styles/SessionWizard.css';
 
 const SessionWizard = ({ patient, onCancel, onComplete, isModal = false }) => {
@@ -8,6 +8,7 @@ const SessionWizard = ({ patient, onCancel, onComplete, isModal = false }) => {
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const [audioBlob, setAudioBlob] = useState(null);
+    const [audioMimeType, setAudioMimeType] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [generatedNotes, setGeneratedNotes] = useState(null);
     const [editableNotes, setEditableNotes] = useState('');
@@ -21,11 +22,50 @@ const SessionWizard = ({ patient, onCancel, onComplete, isModal = false }) => {
         return () => clearInterval(timerRef.current);
     }, []);
 
+    const getSupportedMimeType = () => {
+        if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) {
+            return null;
+        }
+
+        const candidates = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/ogg;codecs=opus',
+            'audio/ogg',
+            'audio/mp4',
+            'audio/mpeg'
+        ];
+
+        return candidates.find(type => MediaRecorder.isTypeSupported(type)) || null;
+    };
+
     const startRecording = async () => {
         try {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                alert('Microphone access is not supported in this browser.');
+                return;
+            }
+
+            if (typeof MediaRecorder === 'undefined') {
+                alert('MediaRecorder is not available in this browser. Please try Chrome.');
+                return;
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorderRef.current = new MediaRecorder(stream);
+            const preferredMimeType = getSupportedMimeType();
+            const recorderOptions = preferredMimeType ? { mimeType: preferredMimeType } : undefined;
+
+            if (preferredMimeType) {
+                console.log('🎙️ Using recorder mime type:', preferredMimeType);
+            } else {
+                console.warn('⚠️ No preferred mime type detected, using default MediaRecorder settings');
+            }
+
+            mediaRecorderRef.current = new MediaRecorder(stream, recorderOptions);
             chunksRef.current = [];
+
+            const recorderMime = mediaRecorderRef.current.mimeType || preferredMimeType || 'audio/webm';
+            setAudioMimeType(recorderMime);
 
             mediaRecorderRef.current.ondataavailable = (e) => {
                 if (e.data.size > 0) {
@@ -34,8 +74,9 @@ const SessionWizard = ({ patient, onCancel, onComplete, isModal = false }) => {
             };
 
             mediaRecorderRef.current.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: 'audio/mp3' }); // or audio/webm
+                const blob = new Blob(chunksRef.current, { type: recorderMime });
                 setAudioBlob(blob);
+                setAudioMimeType(recorderMime);
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -75,17 +116,42 @@ const SessionWizard = ({ patient, onCancel, onComplete, isModal = false }) => {
         setIsProcessing(true);
 
         try {
-            const result = await geminiAudioService.processAudioSession(audioBlob);
-            setGeneratedNotes(result);
+            const resolvedMimeType = audioMimeType || audioBlob.type || 'audio/webm';
+            console.log('🎙️ Sending audio to ElevenLabs STT', {
+                mimeType: resolvedMimeType,
+                size: audioBlob.size,
+                blobType: audioBlob.type
+            });
+            // Transcribe with ElevenLabs only
+            const transcript = await elevenLabsService.transcribeAudio(audioBlob, resolvedMimeType);
+            console.log('📝 ElevenLabs transcript:', transcript);
 
-            // Format initial editable text
-            const formattedText = `Subjective: \n${result.soap.subjective} \n\nObjective: \n${result.soap.objective} \n\nAssessment: \n${result.soap.assessment} \n\nPlan: \n${result.soap.plan} `;
-            setEditableNotes(formattedText);
+            // Populate notes directly from transcript (no Gemini)
+            const result = {
+                summary: transcript,
+                soap: {
+                    subjective: transcript,
+                    objective: '',
+                    assessment: '',
+                    plan: ''
+                },
+                extractedData: {
+                    chiefComplaint: '',
+                    symptoms: [],
+                    diagnosis: '',
+                    medications: [],
+                    followUp: ''
+                }
+            };
+
+            setGeneratedNotes(result);
+            setEditableNotes(transcript);
 
             setStep(4); // Review step
         } catch (error) {
             console.error('Processing failed:', error);
-            alert('Failed to process audio. Please try again.');
+            const message = error?.message || 'Unknown error';
+            alert(`Failed to process audio. ${message}`);
             setStep(2); // Go back to recording
         } finally {
             setIsProcessing(false);
@@ -146,7 +212,16 @@ const SessionWizard = ({ patient, onCancel, onComplete, isModal = false }) => {
                                     <div className="recording-review">
                                         <p>✅ Recording saved ({formatTime(recordingTime)})</p>
                                         <div className="action-row">
-                                            <button onClick={() => setAudioBlob(null)} className="btn-secondary">Retake</button>
+                                            <button
+                                                onClick={() => {
+                                                    setAudioBlob(null);
+                                                    setAudioMimeType('');
+                                                    setRecordingTime(0);
+                                                }}
+                                                className="btn-secondary"
+                                            >
+                                                Retake
+                                            </button>
                                             <button onClick={handleProcessAudio} className="btn-primary">Process with AI ✨</button>
                                         </div>
                                     </div>

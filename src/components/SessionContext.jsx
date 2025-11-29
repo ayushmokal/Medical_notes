@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const SessionContext = ({ patientId }) => {
-    // In a real app, fetch data for the specific session date
-    const contextData = {
+    const defaultContext = {
         scores: { sleep: 78, recovery: 85, activity: 60 },
         recentLabs: [
             { name: 'Lipid Panel', status: 'Normal', date: 'Nov 20' },
@@ -10,6 +11,34 @@ const SessionContext = ({ patientId }) => {
         ],
         coachSummary: "Patient has been improving sleep consistency."
     };
+
+    const [contextData, setContextData] = useState(defaultContext);
+
+    useEffect(() => {
+        const fetchContext = async () => {
+            if (!patientId) return;
+            try {
+                const patientRef = doc(db, 'patients', patientId);
+                const snap = await getDoc(patientRef);
+                if (!snap.exists()) return;
+
+                const data = snap.data();
+                const health = data?.healthContext || {};
+
+                setContextData({
+                    scores: health.scores || defaultContext.scores,
+                    recentLabs: health.recentLabs || defaultContext.recentLabs,
+                    coachSummary: health.coachSummary || defaultContext.coachSummary
+                });
+            } catch (err) {
+                console.error('Failed to load health context for patient:', err);
+            }
+        };
+
+        fetchContext();
+        // We only want to refetch when patientId changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [patientId]);
 
     return (
         <div className="bg-white border-l border-gray-200 w-80 flex-shrink-0 p-4 overflow-y-auto h-full">
