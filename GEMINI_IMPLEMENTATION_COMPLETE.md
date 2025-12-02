@@ -18,7 +18,7 @@
 **File**: `src/config/gemini.config.js`
 
 ✅ **Complete configuration** with:
-- Your API key: `AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8`
+- API key loaded from `.env` as `VITE_GEMINI_API_KEY`
 - Model: `gemini-2.0-flash-exp`
 - Generation config (temperature, topK, topP, maxTokens)
 - Rate limiting settings (15 req/min, 1500/day)
@@ -30,7 +30,7 @@
 
 ✅ **Your API key is configured**:
 ```bash
-VITE_GEMINI_API_KEY=AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+VITE_GEMINI_API_KEY=<your_gemini_api_key>
 VITE_USE_GEMINI_OCR=true
 VITE_ENABLE_TESSERACT_FALLBACK=true
 ```
@@ -81,7 +81,7 @@ VITE_ENABLE_TESSERACT_FALLBACK=true
 ## 🔑 Your API Configuration
 
 ```javascript
-API Key: AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+API Key: Stored in .env as VITE_GEMINI_API_KEY
 Model: gemini-2.0-flash-exp
 Status: ✅ READY TO USE
 
@@ -117,7 +117,7 @@ node test-gemini.js
 Expected output:
 ```
 ✅ Gemini API key found in .env file
-🔑 Key: AIzaSyAbwIxsz82oLE...COQ8
+🔑 Key detected (redacted)
 🔌 Testing API connection...
 📡 Sending test request to Gemini...
 📨 Response received: OK
@@ -308,7 +308,7 @@ const handleOCRExtraction = async () => {
 cat .env | grep GEMINI
 
 # Should show:
-# VITE_GEMINI_API_KEY=AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+# VITE_GEMINI_API_KEY=<your_gemini_api_key>
 
 # Test API key
 node test-gemini.js

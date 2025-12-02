@@ -4,7 +4,7 @@
  */
 class ElevenLabsService {
     constructor() {
-        this.apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY || 'sk_e5135a4ba81af380808e12f2c68f00d4e28d08caa779cd09';
+        this.apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
         this.baseUrl = 'https://api.elevenlabs.io';
         // Default to current production STT model
         this.modelId = 'scribe_v2';

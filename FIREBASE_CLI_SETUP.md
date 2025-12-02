@@ -111,7 +111,7 @@ Copy the output and update `src/config/firebase.config.js`:
 
 ```javascript
 export const firebaseConfig = {
-  apiKey: "AIza...",
+  apiKey: "<your_api_key>",
   authDomain: "medical-notes-system.firebaseapp.com",
   projectId: "medical-notes-system",
   storageBucket: "medical-notes-system.appspot.com",

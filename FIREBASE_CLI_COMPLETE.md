@@ -17,13 +17,13 @@
 **File**: `src/config/firebase.config.js`
 ```javascript
 export const firebaseConfig = {
-  apiKey: "AIzaSyAglWqPmrrXU5foQaNuVsVSdI9WWZiHKCk",
-  authDomain: "medical-notes-system.firebaseapp.com",
-  projectId: "medical-notes-system",
-  storageBucket: "medical-notes-system.firebasestorage.app",
-  messagingSenderId: "221922593535",
-  appId: "1:221922593535:web:01f102136c8410cc9edaca",
-  measurementId: "G-ETEE1KP5WL"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 ```
 ✅ **Status**: Configuration file updated
@@ -31,14 +31,15 @@ export const firebaseConfig = {
 ### 4. Environment Variables Updated
 **File**: `.env`
 ```bash
-VITE_FIREBASE_API_KEY=AIzaSyAglWqPmrrXU5foQaNuVsVSdI9WWZiHKCk
-VITE_FIREBASE_AUTH_DOMAIN=medical-notes-system.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=medical-notes-system
-VITE_FIREBASE_STORAGE_BUCKET=medical-notes-system.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=221922593535
-VITE_FIREBASE_APP_ID=1:221922593535:web:01f102136c8410cc9edaca
+VITE_FIREBASE_API_KEY=<your_firebase_api_key>
+VITE_FIREBASE_AUTH_DOMAIN=<your_auth_domain>
+VITE_FIREBASE_PROJECT_ID=<your_project_id>
+VITE_FIREBASE_STORAGE_BUCKET=<your_storage_bucket>
+VITE_FIREBASE_MESSAGING_SENDER_ID=<your_messaging_sender_id>
+VITE_FIREBASE_APP_ID=<your_app_id>
+VITE_FIREBASE_MEASUREMENT_ID=<your_measurement_id_optional>
 
-VITE_GEMINI_API_KEY=AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+VITE_GEMINI_API_KEY=<your_gemini_api_key>
 ```
 ✅ **Status**: Environment configured
 
@@ -49,7 +50,7 @@ VITE_GEMINI_API_KEY=AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
 - **Indexes**: `firestore.indexes.json` (configured)
 
 ### 6. Gemini AI OCR
-- **API Key**: AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+- **API Key**: Stored in `.env` as `VITE_GEMINI_API_KEY`
 - **Model**: gemini-2.0-flash-exp
 - **Status**: ✅ **TESTED AND WORKING!**
 - **Test Result**: API connection successful
@@ -214,7 +215,7 @@ node test-gemini.js
 # Check .env file
 cat .env | grep GEMINI
 
-# Should show: VITE_GEMINI_API_KEY=AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+# Should show: VITE_GEMINI_API_KEY=<your_gemini_api_key>
 ```
 
 ### If app won't start:

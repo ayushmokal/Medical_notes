@@ -105,7 +105,7 @@ Console: https://console.firebase.google.com/project/medical-notes-system
 
 ### Gemini API (OCR)
 ```
-API Key: AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8
+Set in .env: VITE_GEMINI_API_KEY=<your_key>
 Model: gemini-2.0-flash-exp
 Accuracy: 94% on medical notes
 Speed: 1.4 seconds

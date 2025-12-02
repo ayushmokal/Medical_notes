@@ -2,7 +2,7 @@
 
 export const geminiConfig = {
   // Gemini API Key - Your actual key
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyAbwIxsz82oLEJWAj_qXj7hDNQnVxNCOQ8',
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
   
   // Model configuration - Using Gemini 2.0 Flash for speed and accuracy
   model: 'gemini-2.0-flash-exp',

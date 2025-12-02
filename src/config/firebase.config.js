@@ -4,11 +4,11 @@
 // Created: October 13, 2025
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyAglWqPmrrXU5foQaNuVsVSdI9WWZiHKCk",
-  authDomain: "medical-notes-system.firebaseapp.com",
-  projectId: "medical-notes-system",
-  storageBucket: "medical-notes-system.firebasestorage.app",
-  messagingSenderId: "221922593535",
-  appId: "1:221922593535:web:01f102136c8410cc9edaca",
-  measurementId: "G-ETEE1KP5WL"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };

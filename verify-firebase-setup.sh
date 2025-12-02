@@ -23,18 +23,30 @@ echo ""
 
 # Check Firebase config
 echo "🔧 Checking Firebase Configuration..."
-if grep -q "AIzaSyAglWqPmrrXU5foQaNuVsVSdI9WWZiHKCk" src/config/firebase.config.js; then
-    echo "✅ Firebase config file updated"
+if rg -q "VITE_FIREBASE_API_KEY" src/config/firebase.config.js; then
+    echo "✅ Firebase config file reads from environment variables"
 else
-    echo "❌ Firebase config not updated"
+    echo "❌ Firebase config not updated to use env vars"
 fi
 echo ""
 
 # Check .env file
-if grep -q "VITE_FIREBASE_API_KEY=AIzaSyAglWqPmrrXU5foQaNuVsVSdI9WWZiHKCk" .env; then
-    echo "✅ Environment variables configured"
+if [ -f .env ]; then
+    REQUIRED_VARS=("VITE_FIREBASE_API_KEY" "VITE_FIREBASE_AUTH_DOMAIN" "VITE_FIREBASE_PROJECT_ID" "VITE_FIREBASE_STORAGE_BUCKET" "VITE_FIREBASE_MESSAGING_SENDER_ID" "VITE_FIREBASE_APP_ID")
+    missing_vars=()
+    for var in "${REQUIRED_VARS[@]}"; do
+        if ! grep -q "^${var}=" .env; then
+            missing_vars+=("$var")
+        fi
+    done
+
+    if [ ${#missing_vars[@]} -eq 0 ]; then
+        echo "✅ Environment variables configured"
+    else
+        echo "❌ Missing environment variables: ${missing_vars[*]}"
+    fi
 else
-    echo "❌ Environment variables not configured"
+    echo "❌ .env file not found"
 fi
 echo ""
 
